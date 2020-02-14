@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using CacheStack.InternalExtensions;
-using StackExchange.Redis.Extensions.Core.Abstractions;
+﻿using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace CacheStack
 {
@@ -8,9 +6,9 @@ namespace CacheStack
 	/// Controls the caching logic for the item being cached.  You can set the duration and when to invalidate when removing the cache key isn't enough
 	/// </summary>
 	/// <example>
-	/// context.InvalidateOn(TriggerFrom.Any&lt;User&gt;())
-	/// context.InvalidateOn(TriggerFrom.Id&lt;User&gt;(id))
-	/// context.InvalidateOn(TriggerFrom.Name("myKey"))
+	/// context.InvalidateOn(CacheDependencyOn.Any&lt;User&gt;())
+	/// context.InvalidateOn(CacheDependencyOn.Id&lt;User&gt;(id))
+	/// context.InvalidateOn(CacheDependencyOn.Name("myKey"))
 	/// context.UseCacheProfile(CacheProfile.HighPriority)
 	/// </example>
 	public interface ICacheContext
@@ -18,8 +16,8 @@ namespace CacheStack
 		/// <summary>
 		/// Invalidates the cache for this item, when the specified watchers are triggered
 		/// </summary>
-		/// <param name="watchers">Objects to watch for cache triggers. <remarks>Use the <c>TriggerFrom</c> helper</remarks></param>
-		ICacheContext InvalidateOn(params ICacheTriggerWatcher[] watchers);
+		/// <param name="watchers">Objects to watch for cache triggers. <remarks>Use the <c>CacheDependencyOn</c> helper</remarks></param>
+		//ICacheContext InvalidateOn(params ICacheTriggerWatcher[] watchers);
 		/// <summary>
 		/// Used to specify the cache duration based on a profile
 		/// </summary>
@@ -31,9 +29,9 @@ namespace CacheStack
 	/// Controls the caching logic for the item being cached.  You can set the duration and when to invalidate when removing the cache key isn't enough
 	/// </summary>
 	/// <example>
-	/// context.InvalidateOn(TriggerFrom.Any&lt;User&gt;())
-	/// context.InvalidateOn(TriggerFrom.Id&lt;User&gt;(id))
-	/// context.InvalidateOn(TriggerFrom.Name("myKey"))
+	/// context.InvalidateOn(CacheDependencyOn.Any&lt;User&gt;())
+	/// context.InvalidateOn(CacheDependencyOn.Id&lt;User&gt;(id))
+	/// context.InvalidateOn(CacheDependencyOn.Name("myKey"))
 	/// context.UseCacheProfile(CacheProfile.HighPriority)
 	/// </example>
 	public class CacheContext : ICacheContext
@@ -41,24 +39,24 @@ namespace CacheStack
 		internal const string AnySuffix = "__Any";
 		internal const string IdSuffix = "__Id_";
 
-		public IList<ICacheTriggerWatcher> TriggerWatchers { get; private set; }
+		//public IList<ICacheTriggerWatcher> TriggerWatchers { get; private set; }
 		public object CacheProfile { get; private set; }
 		protected IRedisDefaultCacheClient Cache { get; private set; }
 
 		public CacheContext(IRedisDefaultCacheClient cache)
 		{
-			TriggerWatchers = new List<ICacheTriggerWatcher>();
+			//TriggerWatchers = new List<ICacheTriggerWatcher>();
 			Cache = cache;
 		}
 
-		public ICacheContext InvalidateOn(params ICacheTriggerWatcher[] watchers)
-		{
-			if (watchers == null)
-				return this;
+		//public ICacheContext InvalidateOn(params ICacheTriggerWatcher[] watchers)
+		//{
+		//	if (watchers == null)
+		//		return this;
 
-			TriggerWatchers.AddRange(watchers);
-			return this;
-		}
+		//	TriggerWatchers.AddRange(watchers);
+		//	return this;
+		//}
 
 		public ICacheContext UseCacheProfile(object profile)
 		{

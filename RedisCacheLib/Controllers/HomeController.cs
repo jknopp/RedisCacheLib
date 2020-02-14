@@ -8,24 +8,14 @@ namespace RedisCacheLib.Controllers
 	public class HomeController : BaseController
 	{
 		private readonly IUserService _userService;
-		private readonly IUserProfileService _userProfileService;
-		public HomeController(IUserService userService, IUserProfileService userProfileService)
+		public HomeController(IUserService userService)
 		{
 			_userService = userService;
-			_userProfileService = userProfileService;
 		}
 
 		public async Task<ActionResult> Index()
 		{
-			var test = await _userService.GetByNameAsync("SomeName");
-			var test3 = await _userProfileService.GetByProfileId(test.UserProfileId);
-			//await _userService.SaveAsync(test);
-
-
-			var test2 = await _userService.GetByUsername("SomeUserName");
-			//await _userService.SaveAsync(test2);
-			await _userProfileService.SaveAsync(test3);
-
+			await _userService.GetUserWithProfile();
 			return View();
 		}
 

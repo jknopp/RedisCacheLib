@@ -1,28 +1,30 @@
 ﻿using System;
+using System.Data;
 using System.Threading.Tasks;
 using CacheStack;
+using Canducci.SqlKata.Dapper.Extensions.Builder;
+using Canducci.SqlKata.Dapper.SqlServer;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace RedisCacheLib.Infrastructure
 {
-	public interface IServiceBase<T> where T : class
+	public interface IDataRepositoryBase<T> where T : class
 	{
 		Task<T> SaveAsync(T item);
-		//Task<T> GetByIdOrDefaultAsync(object id);
+		Task<T> GetByIdOrDefaultAsync(int id);
 		Task SoftDeleteAsync(T item);
 		Task SoftUndeleteAsync(T item);
 	}
 
-	public abstract class ServiceBase<T> : IServiceBase<T> where T : class
+	public abstract class DataRepositoryBase<T> : IDataRepositoryBase<T> where T : class
 	{
-		protected IRedisDefaultCacheClient Cache { get; set; }
+		protected IDbConnection Db { get; set; }
 
-		protected ServiceBase(IRedisDefaultCacheClient cache)
+		protected DataRepositoryBase(IDbConnection db)
 		{
-			Cache = cache;
+			Db = db;
 		}
 
-		protected abstract string GetIdCacheKey(object id);
 		protected object GetId(T item)
 		{
 			var type = item.GetType();
@@ -35,26 +37,19 @@ namespace RedisCacheLib.Infrastructure
 
 		public virtual async Task<T> SaveAsync(T item)
 		{
-			//var savedItem = Db.Save(item);
+			//var savedItem = Db.SoftBuild();
 
 			var id = GetId(item);
-
-			await Cache.Trigger(TriggerFor.Id<T>(id));
 
 			//return savedItem;
 			return item;
 		}
 
-		//public virtual async Task<T> GetByIdOrDefaultAsync(object id)
-		//{
-		//	return await Cache.GetOrCacheAsync(GetIdCacheKey(id), context =>
-		//	{
-		//		var item = Db.GetByIdOrDefault<T>(id);
-		//		if (item != null)
-		//			context.InvalidateOn(TriggerFrom.Id<T>(id));
-		//		return item;
-		//	});
-		//}
+		public virtual async Task<T> GetByIdOrDefaultAsync(int id)
+		{
+			//return await Db.SoftBuild().QuerySingleOrDefaultAsync<T>();
+			return null;
+		}
 
 		public virtual async Task SoftDeleteAsync(T item)
 		{
@@ -66,8 +61,6 @@ namespace RedisCacheLib.Infrastructure
 			//{
 			//	id
 			//});
-
-			await Cache.Trigger(TriggerFor.Id<T>(id));
 		}
 
 		public virtual async Task SoftUndeleteAsync(T item)
@@ -80,8 +73,6 @@ namespace RedisCacheLib.Infrastructure
 			//{
 			//	id
 			//});
-
-			await Cache.Trigger(TriggerFor.Id<T>(id));
 		}
 	}
 }

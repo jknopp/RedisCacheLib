@@ -1,5 +1,4 @@
-﻿using System.Net.NetworkInformation;
-
+﻿
 namespace RedisCacheLib.Infrastructure
 {
 	public static class CacheKeys

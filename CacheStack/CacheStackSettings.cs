@@ -9,16 +9,16 @@ namespace CacheStack
 		/// <summary>
 		/// Invoked when an item is retrieved from the cache
 		/// </summary>
-		public static event EventHandler<CacheHitEventArgs> CacheHit = delegate {};
-		internal static void OnCacheHit(object cacheClient, CacheHitEventArgs e)
+		public static event EventHandler<CacheEventArgs> CacheHit = delegate {};
+		internal static void OnCacheHit(object cacheClient, CacheEventArgs e)
 		{
 			CacheHit(cacheClient, e);
 		}
 		/// <summary>
 		/// Invoked when an item is not in the cache
 		/// </summary>
-		public static event EventHandler<CacheHitEventArgs> CacheMiss = delegate {};
-		internal static void OnCacheMiss(object cacheClient, CacheHitEventArgs e)
+		public static event EventHandler<CacheEventArgs> CacheMiss = delegate {};
+		internal static void OnCacheMiss(object cacheClient, CacheEventArgs e)
 		{
 			CacheMiss(cacheClient, e);
 		}
@@ -36,7 +36,7 @@ namespace CacheStack
 		/// <summary>
 		/// Defines the types of objects to search when TriggerFor.ObjectAndRelations is called. These types should have one or more properties with ReferencesAttribute
 		/// </summary>
-		public static IList<Type> TypesForObjectRelations = new List<Type>();
+		//public static IList<Type> TypesForObjectRelations = new List<Type>();
 
 		/// <summary>
 		/// Defines the method for getting cache durations by profile
@@ -46,6 +46,6 @@ namespace CacheStack
 		/// <summary>
 		/// Provides a mechanism to get all cache keys for a particular object
 		/// </summary>
-		public static IDictionary<Type, Func<object, IEnumerable<string>>> CacheKeysForObject = new Dictionary<Type, Func<object, IEnumerable<string>>>();
+		public static IDictionary<Type, Func<ICustomCacheable, IEnumerable<ICacheKey>>> CacheKeysForObject = new Dictionary<Type, Func<ICustomCacheable, IEnumerable<ICacheKey>>>();
 	}
 }

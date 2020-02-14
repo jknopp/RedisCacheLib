@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using CacheStack;
+using CacheStack.Helpers;
 using Castle.Windsor;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 using RedisCacheLib.Infrastructure;
+using RedisCacheLib.Models;
 
 namespace RedisCacheLib
 {
@@ -36,15 +39,14 @@ namespace RedisCacheLib
 			};
 
 			// Share same objects between different cache keys
-			//CacheStackSettings.CacheKeysForObject.Add(typeof(User), item => {
-			//	var userItem = item as User;
-			//	var keys = new List<string>
-			//	{
-			//		CacheKeys.Users.ById(userItem.Id),
-			//		CacheKeys.Users.ByUsername(userItem.Username)
-			//	};
-			//	return keys;
-			//});
+			CacheStackSettings.CacheKeysForObject.Add(typeof(User), item =>
+			{
+				if (item is User userItem)
+				{
+					return CacheKeyHelper.SetCustomCacheKeys(CacheKey.For("BySomeCustomProp", userItem.UserName + userItem.Id));
+				}
+				return null;
+			});
 		}
 	}
 }

@@ -1,58 +1,35 @@
 ﻿using System.Threading.Tasks;
-using CacheStack;
-using StackExchange.Redis.Extensions.Core.Abstractions;
-using RedisCacheLib.Infrastructure;
-using RedisCacheLib.Models;
+using RedisCacheLib.Repositories;
 
 namespace RedisCacheLib.Services
 {
-	public interface IUserService : IServiceBase<User>
+	public interface IUserService
 	{
-		Task<User> GetByNameAsync(string name);
-		Task<User> GetByUsername(string username);
+		Task GetUserWithProfile();
 	}
 
-	public class UserService : ServiceBase<User>, IUserService
+	public class UserService : IUserService
 	{
-		public UserService(IRedisDefaultCacheClient cache) : base(cache)
+		private readonly IUserCacheRepository _userRepository;
+		private readonly IUserProfileCacheRepository _userProfileRepository;
+
+		public UserService(IUserCacheRepository userRepository, IUserProfileCacheRepository userProfileRepository)
 		{
+			_userRepository = userRepository;
+			_userProfileRepository = userProfileRepository;
 		}
 
-		protected override string GetIdCacheKey(object id)
+		public async Task GetUserWithProfile()
 		{
-			return CacheKeys.Users.ById((int)id);
-		}
+			var test = await _userRepository.GetByNameAsync("SomeName");
+			var test3 = await _userProfileRepository.GetByProfileId(4);
 
-		public async Task<User> GetByUsername(string username)
-		{
-			User DataLoadMethod(ICacheContext context)
-			{
-				var item = new User { Id = 2, Name = "SomeName", UserName = "SomeUserName", UserProfileId = 4 };
-				if (item != null)
-				{
-					context.InvalidateOn(TriggerFrom.Id<User>(item.Id));
-					context.InvalidateOn(TriggerFrom.Id<UserProfile>(item.UserProfileId));
-				}
-				return item;
-			}
-			return await Cache.GetOrCacheAsync(CacheKeys.Users.ByUsername(username), DataLoadMethod);
-		}
+			//var test4 = await _userRepository.GetCachedByIdOrDefaultAsync(test.Id);
 
-		public async Task<User> GetByNameAsync(string name)
-		{
-			User DataLoadMethod(ICacheContext context)
-			{
-				var item = new User { Id = 2, Name = "SomeName", UserName = "SomeUserName", UserProfileId = 4 };
-				if (item != null)
-				{
-					context.InvalidateOn(TriggerFrom.Id<User>(item.Id));
-					context.InvalidateOn(TriggerFrom.Id<UserProfile>(item.UserProfileId));
-				}
-				return item;
-			}
-			return await Cache.GetOrCacheAsync(CacheKeys.Users.ByName(name), DataLoadMethod, CacheProfile.Light);
-		}
+			var test2 = await _userRepository.GetByUsernameAsync("SomeUserName");
+			await _userRepository.SaveWithCacheTriggerAsync(test2);
 
-		
+			await _userProfileRepository.SaveWithCacheTriggerAsync(test3);
+		}
 	}
 }

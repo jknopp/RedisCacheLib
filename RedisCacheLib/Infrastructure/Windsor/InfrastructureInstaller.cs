@@ -1,4 +1,7 @@
-﻿using Castle.MicroKernel.Registration;
+﻿using System.Configuration;
+using System.Data;
+using System.Data.SqlClient;
+using Castle.MicroKernel.Registration;
 using Castle.MicroKernel.SubSystems.Configuration;
 using Castle.Windsor;
 using StackExchange.Redis.Extensions.Core;
@@ -6,6 +9,7 @@ using StackExchange.Redis.Extensions.Core.Abstractions;
 using StackExchange.Redis.Extensions.Core.Configuration;
 using StackExchange.Redis.Extensions.Core.Implementations;
 using StackExchange.Redis.Extensions.Newtonsoft;
+using RedisCacheLib.Repositories;
 using RedisCacheLib.Services;
 
 namespace RedisCacheLib.Infrastructure.Windsor
@@ -75,12 +79,25 @@ namespace RedisCacheLib.Infrastructure.Windsor
 				.ImplementedBy<RedisDefaultCacheClient>()
 				.LifestyleSingleton());
 
+			//container.Register(Component.For<SqlConnection>()
+			//	.Instance(new SqlConnection(ConfigurationManager.ConnectionStrings[""].ConnectionString)));
 
-
+			container.Register(Component.For<IDbConnection>()
+				//.UsingFactoryMethod(() =>
+				//{
+				//	//TODO Could profile here
+				//	var connection = container.Resolve<SqlConnection>();
+				//	connection.Open();
+				//	return connection;
+				//})
+				.Instance(new SqlConnection())
+				.Named("Database Connection")
+				.LifestylePerWebRequest());
 
 
 			container.Register(Component.For<IUserService>().ImplementedBy<UserService>());
-			container.Register(Component.For<IUserProfileService>().ImplementedBy<UserProfileService>());
+			container.Register(Component.For<IUserCacheRepository>().ImplementedBy<UserCacheRepository>());
+			container.Register(Component.For<IUserProfileCacheRepository>().ImplementedBy<UserProfileCacheRepository>());
 
 			//         container.Register(Component.For<ILogger>()
 			//             .ImplementedBy<KenticoLogger>());
