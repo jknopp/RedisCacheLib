@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using CacheStack.InternalExtensions;
-using ServiceStack.Caching;
+using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace CacheStack
 {
@@ -43,9 +43,9 @@ namespace CacheStack
 
 		public IList<ICacheTriggerWatcher> TriggerWatchers { get; private set; }
 		public object CacheProfile { get; private set; }
-		protected ICacheClient Cache { get; private set; }
+		protected IRedisDefaultCacheClient Cache { get; private set; }
 
-		public CacheContext(ICacheClient cache)
+		public CacheContext(IRedisDefaultCacheClient cache)
 		{
 			TriggerWatchers = new List<ICacheTriggerWatcher>();
 			Cache = cache;

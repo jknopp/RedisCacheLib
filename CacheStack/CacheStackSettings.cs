@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using ServiceStack.Caching;
+using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace CacheStack
 {
@@ -26,7 +26,7 @@ namespace CacheStack
 		/// <summary>
 		/// Cache client to use with output caching
 		/// </summary>
-		public static ICacheClient CacheClient { get; set; }
+		public static IRedisDefaultCacheClient CacheClient { get; set; }
 
 		/// <summary>
 		/// When generating cache keys, use the route name if available

@@ -1,7 +1,8 @@
 ﻿using System;
 using CacheStack;
 using Castle.Windsor;
-using ServiceStack.Caching;
+using StackExchange.Redis.Extensions.Core.Abstractions;
+using RedisCacheLib.Infrastructure;
 
 namespace RedisCacheLib
 {
@@ -9,10 +10,30 @@ namespace RedisCacheLib
 	{
 		public static void Initialize(IWindsorContainer container)
 		{
-			CacheStackSettings.CacheClient = container.Resolve<ICacheClient>();
+			CacheStackSettings.CacheClient = container.Resolve<IRedisDefaultCacheClient>();
 			// All of our routes are unique and not shared, so we can use the route name instead of reflection to get a unique cache key
 			CacheStackSettings.UseRouteNameForCacheKey = true;
-			CacheStackSettings.CacheProfileDurations = profile => TimeSpan.FromMinutes(15); // Same as default.
+			CacheStackSettings.CacheProfileDurations = profile =>
+			{
+				// Can get these values from a db, web.config, or anywhere else
+				if (profile != null)
+				{
+					switch ((CacheProfile)profile)
+					{
+						case CacheProfile.None:
+							return TimeSpan.Zero;
+						case CacheProfile.Light:
+							return TimeSpan.FromSeconds(5);
+						case CacheProfile.Heavy:
+							return TimeSpan.FromMinutes(60);
+						// ReSharper disable once RedundantCaseLabel
+						case CacheProfile.Default:
+						default:
+							break;
+					}
+				}
+				return TimeSpan.FromMinutes(15);
+			};
 
 			// Share same objects between different cache keys
 			//CacheStackSettings.CacheKeysForObject.Add(typeof(User), item => {
@@ -24,27 +45,6 @@ namespace RedisCacheLib
 			//	};
 			//	return keys;
 			//});
-
-			//CacheStackSettings.CacheProfileDurations = profile => {
-			//	// Can get these values from a db, web.config, or anywhere else
-			//	switch ((CacheProfile)profile)
-			//	{
-			//		case CacheProfile.Profile1:
-			//			return TimeSpan.FromSeconds(1);
-			//		case CacheProfile.Profile2:
-			//			return TimeSpan.FromMinutes(60);
-			//		default:
-			//			return TimeSpan.FromMinutes(15);
-			//	}
-			//};
-
-
-	}
-		// Somewhere else in your solution
-		//public enum CacheProfile
-		//{
-		//	Profile1,
-		//	Profile2,
-		//}
+		}
 	}
 }

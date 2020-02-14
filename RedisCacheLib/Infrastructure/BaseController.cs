@@ -1,19 +1,14 @@
 ﻿using System.Web.Mvc;
-using CacheStack;
 using Castle.Windsor;
-using ServiceStack.Caching;
+using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace RedisCacheLib.Infrastructure
 {
-	public abstract class BaseController : Controller, IWithCacheContext
+	public abstract class BaseController : Controller
 	{
 		private IWindsorContainer WindsorContainer { get; }
 		//protected ILog Log { get; private set; }
-		protected ICacheClient Cache { get; private set; }
-		/// <summary>
-		/// Used to set the cache context for donut cached actions
-		/// </summary>
-		public ICacheContext CacheContext { get; private set; }
+		protected IRedisDefaultCacheClient Cache { get; private set; }
 
 		protected BaseController()
 		{
@@ -23,8 +18,7 @@ namespace RedisCacheLib.Infrastructure
 
 			if (WindsorContainer != null)
 			{
-				Cache = WindsorContainer.Resolve<ICacheClient>();
-				CacheContext = new CacheContext(Cache);
+				Cache = WindsorContainer.Resolve<IRedisDefaultCacheClient>();
 			}
 		}
 	}

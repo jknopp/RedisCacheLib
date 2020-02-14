@@ -1,4 +1,5 @@
-﻿using System.Web.Mvc;
+﻿using System.Threading.Tasks;
+using System.Web.Mvc;
 using RedisCacheLib.Infrastructure;
 using RedisCacheLib.Services;
 
@@ -6,15 +7,25 @@ namespace RedisCacheLib.Controllers
 {
 	public class HomeController : BaseController
 	{
-		private IObjectService _objectService;
-		public HomeController(IObjectService objectService)
+		private readonly IUserService _userService;
+		private readonly IUserProfileService _userProfileService;
+		public HomeController(IUserService userService, IUserProfileService userProfileService)
 		{
-			_objectService = objectService;
+			_userService = userService;
+			_userProfileService = userProfileService;
 		}
 
-		public ActionResult Index()
+		public async Task<ActionResult> Index()
 		{
-			_objectService.GetByName("somename");
+			var test = await _userService.GetByNameAsync("SomeName");
+			var test3 = await _userProfileService.GetByProfileId(test.UserProfileId);
+			//await _userService.SaveAsync(test);
+
+
+			var test2 = await _userService.GetByUsername("SomeUserName");
+			//await _userService.SaveAsync(test2);
+			await _userProfileService.SaveAsync(test3);
+
 			return View();
 		}
 

@@ -19,7 +19,7 @@ namespace CacheStack
 			{
 				var references = new Dictionary<Type, IDictionary<Type, IList<string>>>();
 				// Get a list of all ReferencesAttributes used in the model classes
-				var classTypes = typeof(TriggerFor).Assembly.GetTypes().Where(x => x.IsPublic && !x.IsAbstract && x.IsClass && x.Namespace != null && x.Namespace.StartsWith("Quad.Core.Models."));
+				var classTypes = typeof(TriggerFor).Assembly.GetTypes().Where(x => x.IsPublic && !x.IsAbstract && x.IsClass && x.Namespace != null && x.Namespace.StartsWith("Quad.Core.Models.")); //TODO What namespace is this?
 				foreach (var classType in classTypes)
 				{
 					var propertiesWithReferencesAttribute = classType.GetProperties().Where(prop => prop.IsDefined(typeof(ReferencesAttribute), true)).ToList();

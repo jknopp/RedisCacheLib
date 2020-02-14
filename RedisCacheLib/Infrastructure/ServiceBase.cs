@@ -1,22 +1,23 @@
 ﻿using System;
+using System.Threading.Tasks;
 using CacheStack;
-using ServiceStack.Caching;
+using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace RedisCacheLib.Infrastructure
 {
 	public interface IServiceBase<T> where T : class
 	{
-		T Save(T item);
-		//T GetByIdOrDefault(object id);
-		void SoftDelete(T item);
-		void SoftUndelete(T item);
+		Task<T> SaveAsync(T item);
+		//Task<T> GetByIdOrDefaultAsync(object id);
+		Task SoftDeleteAsync(T item);
+		Task SoftUndeleteAsync(T item);
 	}
 
 	public abstract class ServiceBase<T> : IServiceBase<T> where T : class
 	{
-		protected ICacheClient Cache { get; set; }
+		protected IRedisDefaultCacheClient Cache { get; set; }
 
-		protected ServiceBase(ICacheClient cache)
+		protected ServiceBase(IRedisDefaultCacheClient cache)
 		{
 			Cache = cache;
 		}
@@ -32,30 +33,30 @@ namespace RedisCacheLib.Infrastructure
 			return idProperty.GetValue(item);
 		}
 
-		public virtual T Save(T item)
+		public virtual async Task<T> SaveAsync(T item)
 		{
 			//var savedItem = Db.Save(item);
 
 			var id = GetId(item);
 
-			Cache.Trigger(TriggerFor.Id<T>(id));
+			await Cache.Trigger(TriggerFor.Id<T>(id));
 
 			//return savedItem;
 			return item;
 		}
 
-		//public virtual T GetByIdOrDefault(object id)
+		//public virtual async Task<T> GetByIdOrDefaultAsync(object id)
 		//{
-		//	return Cache.GetOrCache(GetIdCacheKey(id), context =>
+		//	return await Cache.GetOrCacheAsync(GetIdCacheKey(id), context =>
 		//	{
-		//		//var item = Db.GetByIdOrDefault<T>(id);
-		//		//if (item != null)
-		//		//	context.InvalidateOn(TriggerFrom.Id<T>(id));
-		//		//return item;
+		//		var item = Db.GetByIdOrDefault<T>(id);
+		//		if (item != null)
+		//			context.InvalidateOn(TriggerFrom.Id<T>(id));
+		//		return item;
 		//	});
 		//}
 
-		public virtual void SoftDelete(T item)
+		public virtual async Task SoftDeleteAsync(T item)
 		{
 			var id = GetId(item);
 
@@ -66,10 +67,10 @@ namespace RedisCacheLib.Infrastructure
 			//	id
 			//});
 
-			Cache.Trigger(TriggerFor.Id<T>(id));
+			await Cache.Trigger(TriggerFor.Id<T>(id));
 		}
 
-		public virtual void SoftUndelete(T item)
+		public virtual async Task SoftUndeleteAsync(T item)
 		{
 			var id = GetId(item);
 
@@ -80,7 +81,7 @@ namespace RedisCacheLib.Infrastructure
 			//	id
 			//});
 
-			Cache.Trigger(TriggerFor.Id<T>(id));
+			await Cache.Trigger(TriggerFor.Id<T>(id));
 		}
 	}
 }

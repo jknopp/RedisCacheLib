@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using ServiceStack.Caching;
+using System.Threading.Tasks;
+using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace CacheStack
 {
@@ -14,7 +15,7 @@ namespace CacheStack
 		/// </summary>
 		/// <param name="cache">Cache to work with</param>
 		/// <param name="triggers">Triggers to clear cache listeners <remarks>Use the <c>TriggerFor</c> helper</remarks></param>
-		public static void Trigger(this ICacheClient cache, params ICacheTrigger[] triggers)
+		public static async Task Trigger(this IRedisDefaultCacheClient cache, params ICacheTrigger[] triggers)
 		{
 			var keys = new ConcurrentBag<string>();
 			foreach (var trigger in triggers)
@@ -25,8 +26,8 @@ namespace CacheStack
 			foreach (var key in keys)
 			{
 				// Handle the case where users expect an actual cache key with this name to be cleared
-				cache.Remove(key);
-				ClearTrigger(cache, key);
+				await cache.RemoveAsync(key);
+				await ClearTriggerAsync(cache, key);
 			}
 		}
 
@@ -39,7 +40,7 @@ namespace CacheStack
 			keys.Add(key);
 		}
 
-		private static void ClearTrigger(ICacheClient cache, string key)
+		private static async Task ClearTriggerAsync(IRedisDefaultCacheClient cache, string key)
 		{
 			if (string.IsNullOrEmpty(key))
 				return;
@@ -52,7 +53,7 @@ namespace CacheStack
 
 			foreach (var cacheKey in keys)
 			{
-				cache.Remove(cacheKey);
+				await cache.RemoveAsync(cacheKey);
 			}
 		}
 
@@ -63,10 +64,11 @@ namespace CacheStack
 		/// <param name="cache">Cache to work with</param>
 		/// <param name="key">Cache key for the object</param>
 		/// <param name="cacheAction">Action to perform if the object does not exist in the cache.</param>
+		/// <param name="cacheProfile">Optional. Cache profile to override default if required.</param>
 		/// <returns></returns>
-		public static T GetOrCache<T>(this ICacheClient cache, string key, Func<ICacheContext, T> cacheAction) where T : class
+		public static async Task<T> GetOrCacheAsync<T>(this IRedisDefaultCacheClient cache, string key, Func<ICacheContext, T> cacheAction, object cacheProfile = null) where T : class
 		{
-			var item = cache.Get<T>(key);
+			var item = await cache.GetAsync<T>(key);
 			var eventArgs = new CacheHitEventArgs
 				{
 					CacheKey = key,
@@ -76,12 +78,15 @@ namespace CacheStack
 			{
 				CacheStackSettings.OnCacheMiss(cache, eventArgs);
 				var context = new CacheContext(cache);
-
+				if (cacheProfile != null)
+				{
+					context.UseCacheProfile(cacheProfile);
+				}
 				item = cacheAction(context);
 
 				// No need to cache null values
 				if (item != null)
-					cache.CacheAndSetTriggers(context, key, item);
+					await cache.CacheAndSetTriggersAsync(context, key, item);
 			}
 			else
 			{
@@ -98,7 +103,7 @@ namespace CacheStack
 		/// <param name="context">Context information for how to cache the object</param>
 		/// <param name="key">Cache key</param>
 		/// <param name="item">Item to cache</param>
-		public static void CacheAndSetTriggers<T>(this ICacheClient cache, CacheContext context, string key, T item)
+		public static async Task CacheAndSetTriggersAsync<T>(this IRedisDefaultCacheClient cache, CacheContext context, string key, T item)
 		{
 			// Don't cache if there is no context
 			if (context == null)
@@ -110,27 +115,30 @@ namespace CacheStack
 
 			var expiration = CacheStackSettings.CacheProfileDurations(context.CacheProfile);
 
-			cache.Set(key, item, expiration);
-
-			// Rip through all other keys for this object type and add the item under those cache keys too
-			var itemType = typeof(T);
-			if (CacheStackSettings.CacheKeysForObject != null && CacheStackSettings.CacheKeysForObject.ContainsKey(itemType))
+			if (expiration != TimeSpan.Zero) //Skip if the timespan is 0
 			{
-				var keys = CacheStackSettings.CacheKeysForObject[itemType](item).ToList();
-				// Only setup the other cache keys if the current key exists in them. Should prevent some undesirable results if caching partial objects
-				if (keys.Any(x => x == key))
+				await cache.AddAsync(key, item, expiration);
+
+				// Rip through all other keys for this object type and add the item under those cache keys too
+				var itemType = typeof(T);
+				if (CacheStackSettings.CacheKeysForObject != null &&
+				    CacheStackSettings.CacheKeysForObject.ContainsKey(itemType))
 				{
-					foreach (var k in keys)
+					var keys = CacheStackSettings.CacheKeysForObject[itemType](item).ToList();
+					// Only setup the other cache keys if the current key exists in them. Should prevent some undesirable results if caching partial objects
+					if (keys.Any(x => x == key))
 					{
-						if (k == key)
-							continue;
-						cache.Set(k, item, expiration);
-						AddKeyToTriggers(context, k);
+						foreach (var k in keys)
+						{
+							if (k == key)
+								continue;
+							await cache.AddAsync(k, item, expiration);
+							AddKeyToTriggers(context, k);
+						}
 					}
 				}
+				AddKeyToTriggers(context, key);
 			}
-
-			AddKeyToTriggers(context, key);
 		}
 
 		private static void AddKeyToTriggers(CacheContext context, string key)
@@ -150,16 +158,16 @@ namespace CacheStack
 		/// <param name="key">Cache key for the object</param>
 		/// <param name="cacheAction">Action to perform if the object does not exist in the cache.</param>
 		/// <returns></returns>
-		public static T GetOrCacheStruct<T>(this ICacheClient cache, string key, Func<ICacheContext, T> cacheAction) where T : struct
+		public static async Task<T> GetOrCacheStruct<T>(this IRedisDefaultCacheClient cache, string key, Func<ICacheContext, T> cacheAction) where T : struct
 		{
 			// Wrap the value type as nullable and check the cache
-			var item = cache.Get<T?>(key);
+			var item = await cache.GetAsync<T?>(key);
 			if (item == null)
 			{
 				var context = new CacheContext(cache);
 
 				item = cacheAction(context);
-				cache.CacheAndSetTriggers(context, key, item);
+				await cache.CacheAndSetTriggersAsync(context, key, item);
 			}
 			return item.Value;
 		}
@@ -168,7 +176,7 @@ namespace CacheStack
 		/// Clear all triggers
 		/// </summary>
 		/// <param name="cache">Cache to work with</param>
-		public static void FlushTriggers(this ICacheClient cache)
+		public static void FlushTriggers(this IRedisDefaultCacheClient cache)
 		{
 			Triggers.Clear();
 		}
