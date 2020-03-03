@@ -31,7 +31,7 @@ namespace RedisCacheLib.Models
 
 		public IReadOnlyCollection<ICacheKey> CustomCacheKeys =>
 			CacheKeyHelper.SetCustomCacheKeys(
-				CacheKey.For("ByName", Name),
-				CacheKey.For("ByUserName", UserName));
+				CustomCacheKey.For("ByName", Name),
+				CustomCacheKey.For("ByUserName", UserName));
 	}
 }

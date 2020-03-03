@@ -6,6 +6,6 @@ namespace CacheStack
 	public interface ICustomCacheable : ICacheable
 	{
 		[JsonIgnore]
-		IReadOnlyCollection<ICacheKey> CustomCacheKeys { get; }
+		IReadOnlyCollection<ICustomCacheKey> CustomCacheKeys { get; }
 	}
 }

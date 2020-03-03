@@ -110,9 +110,11 @@
     <Compile Include="CacheContext.cs" />
     <Compile Include="CacheExtensions.cs" />
     <Compile Include="CacheEventArgs.cs" />
-    <Compile Include="ICacheKey.cs" />
+    <Compile Include="ICustomCacheKey.cs" />
+    <Compile Include="HashKey.cs" />
+    <Compile Include="IHashKey.cs" />
     <Compile Include="ValueObject.cs" />
-    <Compile Include="CacheKey.cs" />
+    <Compile Include="CustomCacheKey.cs" />
     <Compile Include="CacheStackSettings.cs" />
     <Compile Include="HashKeyTrigger.cs" />
     <Compile Include="Helpers\CacheKeyHelper.cs" />

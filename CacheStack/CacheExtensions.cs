@@ -61,32 +61,32 @@ namespace CacheStack
 		public static async Task<T> GetOrCacheAsync<T>(this IRedisDefaultCacheClient cache, int idForCacheKey, Func<Task<T>> cacheAction, object cacheProfile = null) where T : class, ICacheable
 		{
 			var type = typeof(T);
-			var hasCustomCacheKeys = typeof(ICustomCacheable).IsAssignableFrom(typeof(T));
+			var hasCustomCacheKeys = typeof(ICustomCacheable).IsAssignableFrom(type);
 
 			//https://instagram-engineering.com/storing-hundreds-of-millions-of-simple-key-value-pairs-in-redis-1091ae80f74c
 			T item;
-			string hashKey;
-			string idKey;
+			string key;
+			string field;
 			if (hasCustomCacheKeys)
 			{
-				hashKey = $"{type.FullName}:0"; // Caching an object with Custom Cache Keys so we don't explicitly know the hashset ID, cache in hashset:0 with other custom cache key objects
-				idKey = $"Id:{idForCacheKey}";
+				key = $"{type.FullName}:0"; // Caching an object with Custom Cache Keys so we don't explicitly know the hashset ID, cache in hashset:0 with other custom cache key objects
+				field = $"Id:{idForCacheKey}";
 
 				//Will need to do a search of the hashset keys to figure out if the keys contain the key we have
-				var kvps = await cache.HashScanAsync<T>(hashKey, $"*{idKey}*"); //Default page size 10, the larger the hashset the larger this # should be
+				var kvps = await cache.HashScanAsync<T>(key, $"*{field}*"); //Default page size 10, the larger the hashset the larger this # should be
 				var kvp = kvps.SingleOrDefault(); //There can only be 1 key in the hash containing the cache key
 				item = kvp.Value;
 			}
 			else
 			{
-				hashKey = $"{type.FullName}:{ Math.Round((double)(1000 + idForCacheKey) / 1000) }"; // Caching an object in hashset with ID for scalability
-				idKey = $"Id:{idForCacheKey}";
-				item = await cache.HashGetAsync<T>(hashKey, idKey);
+				key = $"{type.FullName}:{ Math.Round((double)(1000 + idForCacheKey) / 1000) }"; // Caching an object in hashset with ID for scalability
+				field = $"Id:{idForCacheKey}";
+				item = await cache.HashGetAsync<T>(key, field);
 			}
 
 			var eventArgs = new CacheEventArgs //TODO Add hashkey to event
 			{
-				CacheKey = idKey,
+				CacheKey = new HashKey { Key = key, Field = field },
 				Type = typeof(T)
 			};
 			if (item == null)
@@ -104,9 +104,9 @@ namespace CacheStack
 				{
 					if (hasCustomCacheKeys)
 					{
-						idKey = $"{idKey}||{string.Join("||", ((ICustomCacheable)item).CustomCacheKeys)}";
+						field = $"{field}||{string.Join("||", ((ICustomCacheable)item).CustomCacheKeys)}";
 					}
-					await cache.CacheAsync(context, hashKey, idKey, item);
+					await cache.CacheAsync(context, key, field, item);
 				}
 			}
 			else
@@ -128,7 +128,7 @@ namespace CacheStack
 		public static async Task<T> GetOrCacheAsync<T>(this IRedisDefaultCacheClient cache, int idForCacheKey, Func<T> cacheAction, object cacheProfile = null) where T : class, ICacheable
 		{
 			var type = typeof(T);
-			var hasCustomCacheKeys = typeof(ICustomCacheable).IsAssignableFrom(typeof(T));
+			var hasCustomCacheKeys = typeof(ICustomCacheable).IsAssignableFrom(type);
 
 			//https://instagram-engineering.com/storing-hundreds-of-millions-of-simple-key-value-pairs-in-redis-1091ae80f74c
 			T item;
@@ -153,7 +153,7 @@ namespace CacheStack
 
 			var eventArgs = new CacheEventArgs //TODO Add hash key
 			{
-				CacheKey = idKey,
+				CacheKey = new HashKey { Key = hashKey, Field = idKey },
 				Type = typeof(T)
 			};
 			if (item == null)
@@ -192,7 +192,7 @@ namespace CacheStack
 		/// <param name="cacheAction">Action to perform if the object does not exist in the cache.</param>
 		/// <param name="cacheProfile">Optional. Cache profile to override default if required.</param>
 		/// <returns></returns>
-		public static async Task<T> GetOrCacheAsync<T>(this IRedisDefaultCacheClient cache, CacheKey customCacheKey, Func<Task<T>> cacheAction, object cacheProfile = null) where T : class, ICustomCacheable
+		public static async Task<T> GetOrCacheAsync<T>(this IRedisDefaultCacheClient cache, ICustomCacheKey customCacheKey, Func<Task<T>> cacheAction, object cacheProfile = null) where T : class, ICustomCacheable
 		{
 			//TODO Check if custom cache key is associated with T
 			var type = typeof(T);
@@ -207,7 +207,7 @@ namespace CacheStack
 
 			var eventArgs = new CacheEventArgs //TODO Add hashkey to event
 			{
-				CacheKey = customCacheKey,
+				CacheKey = new HashKey { Key = hashKey, Field = customCacheKey.ToString() },
 				Type = typeof(T)
 			};
 			if (item == null)
@@ -223,7 +223,7 @@ namespace CacheStack
 				// No need to cache null values
 				if (item != null)
 				{
-					var key = $"Id:{item.IdForCacheKey}||{string.Join("||", ((ICustomCacheable)item).CustomCacheKeys)}";
+					var key = $"Id:{item.IdForCacheKey}||{string.Join("||", item.CustomCacheKeys)}";
 					await cache.CacheAsync<T>(context, hashKey, key, item);
 				}
 			}
@@ -243,7 +243,7 @@ namespace CacheStack
 		/// <param name="cacheAction">Action to perform if the object does not exist in the cache.</param>
 		/// <param name="cacheProfile">Optional. Cache profile to override default if required.</param>
 		/// <returns></returns>
-		public static async Task<T> GetOrCacheAsync<T>(this IRedisDefaultCacheClient cache, CacheKey customCacheKey, Func<T> cacheAction, object cacheProfile = null) where T : class, ICustomCacheable
+		public static async Task<T> GetOrCacheAsync<T>(this IRedisDefaultCacheClient cache, ICustomCacheKey customCacheKey, Func<T> cacheAction, object cacheProfile = null) where T : class, ICustomCacheable
 		{
 			var type = typeof(T);
 			//https://instagram-engineering.com/storing-hundreds-of-millions-of-simple-key-value-pairs-in-redis-1091ae80f74c
@@ -257,7 +257,7 @@ namespace CacheStack
 
 			var eventArgs = new CacheEventArgs //TODO Add hashkey to event
 			{
-				CacheKey = customCacheKey,
+				CacheKey = new HashKey { Key = hashKey, Field = customCacheKey.ToString() },
 				Type = typeof(T)
 			};
 			if (item == null)
@@ -284,6 +284,7 @@ namespace CacheStack
 			}
 			return item;
 		}
+		//TODO ^^^^^^^^^^^^^^^
 
 		/// <summary>
 		/// Caches the specified item using the context information
@@ -295,57 +296,58 @@ namespace CacheStack
 		/// <param name="item">Item to cache</param>
 		public static async Task CacheAsync(this IRedisDefaultCacheClient cache, CacheContext context, string hashKey, string key, ICacheable item)
 		{
-			// Don't cache if there is no context
-			if (context == null)
-				return;
+			var expiration = GetCacheExpiration(context);
+			if (!expiration.HasValue) return;
 
-			// Don't cache if there are no profile durations configured
-			if (CacheStackSettings.CacheProfileDurations == null)
-				return;
-
-			var expiration = CacheStackSettings.CacheProfileDurations(context.CacheProfile);
-
-			if (expiration != TimeSpan.Zero) //Skip if the timespan is 0
-			{
-				await cache.HashSetAsync(hashKey, key, item);
-			}
+			await cache.HashSetAsync(hashKey, key, item);
 		}
 
 		public static async Task CacheAsync<T>(this IRedisDefaultCacheClient cache, CacheContext context, string hashKey, string key, ICustomCacheable item) where T : class, ICustomCacheable
 		{
-			// Don't cache if there is no context
-			if (context == null)
-				return;
+			var expiration = GetCacheExpiration(context);
+			if (!expiration.HasValue) return;
 
-			// Don't cache if there are no profile durations configured
-			if (CacheStackSettings.CacheProfileDurations == null)
-				return;
-
-			var expiration = CacheStackSettings.CacheProfileDurations(context.CacheProfile);
-
-			if (expiration != TimeSpan.Zero) //Skip if the timespan is 0
-			{
-				// Rip through all other keys for this object type and add the item under those cache keys too
-				var itemType = typeof(T);
-				var hasCustomCacheKeys = typeof(ICustomCacheable).IsAssignableFrom(itemType);
-				if (hasCustomCacheKeys && CacheStackSettings.CacheKeysForObject != null &&
-					CacheStackSettings.CacheKeysForObject.ContainsKey(itemType))
-				{
-					var keys = CacheStackSettings.CacheKeysForObject[itemType](item).ToList();
-					// Only setup the other cache keys if the current key exists in them. Should prevent some undesirable results if caching partial objects
-					//if (keys.Any(x => x.ToString() == key))
-					//{
-						foreach (var k in keys)
-						{
-							if (key.Contains($"||{k}"))
-								continue;
-							key += $"||{k}";
-						}
-					//}
-				}
-				await cache.HashSetAsync(hashKey, key, item);
-			}
+			key = AddAdditionalHashCacheKeysForObject<T>(key, item);
+			await cache.HashSetAsync(hashKey, key, item);
 		}
-		//TODO ^^^^^^^^^^^^^^^
+
+		private static string AddAdditionalHashCacheKeysForObject<T>(string key, ICustomCacheable item) where T : class, ICustomCacheable
+		{
+			// Rip through all other keys for this object type and add the item under those cache keys too
+			var itemType = typeof(T);
+			if (CacheStackSettings.CacheKeysForObject != null &&
+				CacheStackSettings.CacheKeysForObject.ContainsKey(itemType))
+			{
+				var keys = CacheStackSettings.CacheKeysForObject[itemType](item).ToList();
+				// Only setup the other cache keys if the current key exists in them. Should prevent some undesirable results if caching partial objects
+				//if (keys.Any(x => x.ToString() == key))
+				//{
+				foreach (var k in keys)
+				{
+					if (key.Contains($"||{k}"))
+						continue;
+					key += $"||{k}";	
+				}
+				//}
+			}
+			return key;
+		}
+
+		private static TimeSpan? GetCacheExpiration(CacheContext context)
+		{
+			// Don't cache if there is no context or are no profile durations configured
+			if (context == null || CacheStackSettings.CacheProfileDurations == null)
+			{
+				return null;
+			}
+			var expiration = CacheStackSettings.CacheProfileDurations(context.CacheProfile);
+			if (expiration == TimeSpan.Zero)
+			{
+				return null;
+			}
+			return expiration;
+		}
+
+
 	}
 }

@@ -43,7 +43,7 @@ namespace RedisCacheLib
 			{
 				if (item is User userItem)
 				{
-					return CacheKeyHelper.SetCustomCacheKeys(CacheKey.For("BySomeCustomProp", userItem.UserName + userItem.Id));
+					return CacheKeyHelper.SetCustomCacheKeys(CustomCacheKey.For("BySomeCustomProp", userItem.UserName + userItem.Id));
 				}
 				return null;
 			});

@@ -46,6 +46,6 @@ namespace CacheStack
 		/// <summary>
 		/// Provides a mechanism to get all cache keys for a particular object
 		/// </summary>
-		public static IDictionary<Type, Func<ICustomCacheable, IEnumerable<ICacheKey>>> CacheKeysForObject = new Dictionary<Type, Func<ICustomCacheable, IEnumerable<ICacheKey>>>();
+		public static IDictionary<Type, Func<ICustomCacheable, IEnumerable<ICustomCacheKey>>> CacheKeysForObject = new Dictionary<Type, Func<ICustomCacheable, IEnumerable<ICustomCacheKey>>>();
 	}
 }

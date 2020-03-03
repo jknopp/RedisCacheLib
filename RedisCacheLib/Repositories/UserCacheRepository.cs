@@ -25,7 +25,7 @@ namespace RedisCacheLib.Repositories
 			{
 				return new User { Id = 2, Name = "SomeName", UserName = "SomeUserName", UserProfileId = 4 };
 			}
-			return await Cache.GetOrCacheAsync(CacheKey.For("ByUserName", username), DataLoadMethod);
+			return await Cache.GetOrCacheAsync(CustomCacheKey.For("ByUserName", username), DataLoadMethod);
 		}
 
 		public async Task<User> GetByNameAsync(string name)
@@ -34,7 +34,7 @@ namespace RedisCacheLib.Repositories
 			{
 				return await Task.FromResult(new User { Id = 19, Name = "AnotherName", UserName = "AnotherUserName", UserProfileId = 54 });
 			}
-			return await Cache.GetOrCacheAsync(CacheKey.For("ByName", name), DataLoadMethod, CacheProfile.Light);
+			return await Cache.GetOrCacheAsync(CustomCacheKey.For("ByName", name), DataLoadMethod, CacheProfile.Light);
 		}
 	}
 }

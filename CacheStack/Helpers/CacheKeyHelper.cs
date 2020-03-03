@@ -5,9 +5,9 @@ namespace CacheStack.Helpers
 {
 	public static class CacheKeyHelper
 	{
-		public static IReadOnlyCollection<ICacheKey> SetCustomCacheKeys(params ICacheKey[] keys)
+		public static IReadOnlyCollection<ICustomCacheKey> SetCustomCacheKeys(params ICustomCacheKey[] keys)
 		{
-			return new ReadOnlyCollection<ICacheKey>(keys);
+			return new ReadOnlyCollection<ICustomCacheKey>(keys);
 		}
 	}
 }
